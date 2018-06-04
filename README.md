@@ -4,7 +4,7 @@ The goal of this project is to create an Alexa skill which will allow users to q
 
 Implementation
 	
-Currently, I am using the Alexa Skills Kit(ASK) available through Amazon's developer console to create a list of voice commands that Alexa will "wake up" to and answer user questions. These intents and utterances are coded into JSON to send to the service endpoint. I've chosen the endpoint to be hosted as an AWS Lambda function, which handles much of the server management and is free up to 1 million requests per month. I am currently using node.js to write the Lambda function.
+Currently, I am using the Alexa Skills Kit(ASK) SDK available through Amazon's developer console to create a list of voice commands that Alexa will "wake up" to and answer user questions. These intents and utterances are coded into JSON to send to the service endpoint. I've chosen the endpoint to be hosted as an AWS Lambda function, which handles much of the server management and is free up to 1 million requests per month. I am currently using node.js to write the Lambda function.
 
 Progress
 	
@@ -12,7 +12,7 @@ Alexa can now answer to many utterances such as "Open I2B2" and "show me patient
 
 Expected Issues 
 
-1. Alexa understanding clinical terminology such as "echocardiography". There is no way to increase Alexa's understanding of complex words that are not in her vocabulary. One option moving forward is to limit this Alexa skill to simple I2B2 searches with somewhat pedestrian language such as "Search for patients with breast cancer and a history of tobacco use. 
+1. Alexa understanding clinical terminology such as "echocardiography". There is no way to increase Alexa's understanding of complex words that are not in her vocabulary. One option moving forward is to limit this Alexa skill to simple I2B2 searches with somewhat pedestrian language such as "Search for patients with breast cancer and a history of tobacco use." 
 
 
 
