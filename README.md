@@ -10,3 +10,9 @@ Progress
 	
 Alexa can now answer to many utterances such as "Open I2B2" and "show me patients between the ages of 55 and 60 with lung cancer". When asked this, all the code currently does is have Alexa reply with "Accessing Patient Data". This shows a successful connection between the Alexa software and the AWS Lambda function. Other basic commands such as "help" and "exit" can also be called while the I2B2 skill is running.
 
+Expected Issues 
+
+1. Alexa understanding clinical terminology such as "echocardiography". There is no way to increase Alexa's understanding of complex words that are not in her vocabulary. One option moving forward is to limit this Alexa skill to simple I2B2 searches with somewhat pedestrian language such as "Search for patients with breast cancer and a history of tobacco use. 
+
+
+
