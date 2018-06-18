@@ -32,14 +32,14 @@ const patientDiseaseIntentHandler = {
   handle(handlerInput) {
     var speechText = 'Accessing data of patients with ';
     
-    var disease = handlerInput.requestEnvelope.request.intent.slots["disease"].value;
+    var disease = handlerInput.requestEnvelope.request.intent.slots.disease.value;
     speechText += disease;
     
     //Accessing I2B2 API logic should go here
 
     return handlerInput.responseBuilder
       .speak(speechText)
-      .reprompt('Any more searches?') //Not sure what the parameter does... it does not reprompt the user with the given string           
+      .reprompt('Any more searches?') //Will reprompt user after a certain amount of silence from the user           
       .getResponse();         
   },
 };
@@ -61,8 +61,8 @@ const patientAgeIntentHandler = {
     var speechText = 'Accesing data of patients ';
     
     var slots = handlerInput.requestEnvelope.request.intent.slots;
-    var firstAge = slots["firstAge"].value;
-    var secondAge = slots["secondAge"].value;
+    var firstAge = slots.firstAge.value;
+    var secondAge = slots.secondAge.value;
     
     if (secondAge === undefined) {
       speechText += 'of age ' + firstAge;
@@ -93,9 +93,9 @@ const patientCompleteIntentHandler = {
     var speechText = 'Accesing data of patients between the ages of ';
     
     var slots = handlerInput.requestEnvelope.request.intent.slots;
-    var firstAge = slots["firstAge"].value;
-    var secondAge = slots["secondAge"].value;
-    var disease = slots["disease"].value;
+    var firstAge = slots.firstAge.value;
+    var secondAge = slots.secondAge.value;
+    var disease = slots.disease.value;
     
     speechText+= firstAge + ' an ' + secondAge + ' with ' + disease;
     
@@ -114,7 +114,7 @@ const HelpIntentHandler = {
       && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.HelpIntent';
   },
   handle(handlerInput) {
-    const speechText = 'You can query me for patient data, similar to I2B2.!';
+    const speechText = 'You can query me for patient data, similar to I2B2. Say something like: show me patients with influenza. I can also filter age groups. For example say: give me patients between the ages of 55 and 60 with acute pancreatitis';
 
     return handlerInput.responseBuilder
       .speak(speechText)
@@ -176,4 +176,4 @@ exports.handler = skillBuilder
     SessionEndedRequestHandler
   )
   .addErrorHandlers(ErrorHandler)
-  .lambda();                          //Handles the creation of the skill and routing requests and responses through AWS Lambda function  
+  .lambda();                          //Handles the creation of the skill and routing requests/responses through AWS Lambda function  
