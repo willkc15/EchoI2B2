@@ -4,13 +4,21 @@
 var Alexa       = require('ask-sdk-core'),
     mySQL       = require('mysql');
 
-//Establish db connection
-var db  = mySQL.createConnection({
-      host: "i2b2querystore.cncfflqccsyv.us-east-1.rds.amazonaws.com",
-      user: "willkc15",
-      password: 'gastonbella',
-      database: 'i2b2querystore'
+
+
+//This function returns a promise which we use to return in the patientquery intent handler
+function dbQuery (query, db) {
+  return new Promise ((resolve, reject) => {
+      db.query(query, function(err, result) {
+        db.end();
+      	if (err) {
+      		reject(err);
+      	} else {
+        	resolve(result);
+      	}
     });
+  });
+}
 
 const LaunchRequestHandler = {
   canHandle(handlerInput) {
@@ -39,41 +47,48 @@ const patientQueryIntentHandler = {
     var firstAge = handlerInput.requestEnvelope.request.intent.slots.firstAge.value;
     var secondAge = handlerInput.requestEnvelope.request.intent.slots.secondAge.value;
     
+    //Decides which speech text to send back to Alexa 
     if (firstAge === undefined && secondAge === undefined) {
-      speechText = "Accessing data for patients ";
+      speechText += "with " + disease;
     }
     else if (disease === undefined) {
       speechText += "between the ages of " + firstAge + " and " + secondAge; 
     } else {
       speechText += "between the ages of " + firstAge + " and " + secondAge + " with " + disease;
     }
-    //Accessing rds db logic here
-    db.connect();
-  
-    let sql = "SELECT * FROM querys ORDER BY id ASC LIMIT 1";
-    db.query(sql, function(err, result) {
-      db.end();
-    	if (err) {
-    		console.log(err);
-    	} else {
-      		disease = (result[0].disease);
-          speechText = disease;
-          console.log("Have speech text");
-    	}
-    });
     
-    //************
-    //MAIN PROBLEM: 
-    //Need var speechText to update with value from the database,
-    //but keeps returning before the query has been processed,
-    //therefore not updating speechText. I have tried putting the 
-    //return statements in the callback function but still get an error
-    //************
-   
-    return handlerInput.responseBuilder
-                .speak(speechText)
-                .reprompt("Any more searches?") //Will reprompt user after a certain amount of silence from the user
-                .getResponse();
+      
+    //Establish db connection
+    var db  = mySQL.createConnection({
+      host: "i2b2querystore.cncfflqccsyv.us-east-1.rds.amazonaws.com",
+      user: "willkc15",
+      password: 'gastonbella',
+      database: 'i2b2querystore'
+    });
+  
+    let sqlWrite = "INSERT INTO querys SET ?";
+    let postDB = {disease: disease, firstAge: firstAge, secondAge: secondAge, id: null}; 
+    let sqlRead = "SELECT * FROM querys ORDER BY id DESC LIMIT 1";
+    
+    //Write to database
+    db.query(sqlWrite, postDB, function(err, result) {
+      if (err) {
+        console.log('SOMETHING WRONG WITH DB WRITE');
+      } else {
+        console.log("WROTE TO DB!");
+      }
+    });
+     
+    //Read from database
+    //Must return in this fashion, otherwise will return before db is queried
+    return new Promise((resolve, reject) => {
+     dbQuery(sqlRead, db).then((response) => {
+       resolve(handlerInput.responseBuilder.speak(speechText + ': ' + response[0].disease).getResponse());
+     }).catch((error) => {
+        resolve(handlerInput.responseBuilder.speak('PROMISE NOT WORKING')
+        .getResponse());
+      });
+    });
   }
 };
 
