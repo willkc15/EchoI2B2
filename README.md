@@ -13,7 +13,9 @@ Alexa can now answer to many utterances such as "Open I2B2" and "show me patient
 MOVING FORWARD
 
 -Currently, the python function finds the requested data but has no way of sending it back to Alexa. Will require an agreement with Amazon to keep data returned secure as we would violate HIPAA regulations if Amazon had access to this data. An alternative would be to send the user a private, secure email with the returned results to their Alexa query.
+
 -Need a form of authentication to interact with the I2B2 Alexa skill so only those with access to the I2B2 web client are able to use the I2B2 skill
+
 -Need an algorithm that will find the best possible results to a simple user query. Ex: If a user queries patients with heart disease, we need to be able to find the most generic result. Currently returns whatever I2B2 finds first with the keyword heart disease. As of right now I2B2 might return data discussing left ventricle failure if it is under a path including the keyword heart disease. 
 
 
