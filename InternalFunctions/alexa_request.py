@@ -1,14 +1,18 @@
 import pymysql
 import requests
 import xml.etree.ElementTree as ET
+import json
 
 
 def get_query():
 
-    conn = pymysql.connect(host='i2b2querystore.cncfflqccsyv.us-east-1.rds.amazonaws.com',
-                           user='willkc15',
-                           password='gastonbella',
-                           db='i2b2querystore')
+    with open('config.json', 'r') as f:
+        config = json.load(f)
+
+    conn = pymysql.connect(host=config['dbHost'],
+                           user=config['dbUser'],
+                           password=config['dbPassword'],
+                           db=config['dbName'])
     try:
 
         # Grabs the query that has been in db the longest
@@ -343,9 +347,9 @@ def get_i2b2_result(session_key, search_keys):
 
 
 def main():
-    ### disease = get_query()
+    ### query = get_query()
     # Currently setting default query as application is not live yet
-    query = 'abcdef'
+    query = 'heart'
     print(query)
     # Gets session key necessary for each request we make to I2B2
     session_key = get_session_key()
