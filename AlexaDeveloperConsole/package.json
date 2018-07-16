@@ -20,43 +20,16 @@
                     "samples": []
                 },
                 {
-                    "name": "patientsWith",
+                    "name": "patientQuery",
                     "slots": [
                         {
                             "name": "disease",
                             "type": "MedicalTerminology"
-                        },
-                        {
-                            "name": "firstAge",
-                            "type": "AMAZON.NUMBER"
-                        },
-                        {
-                            "name": "secondAge",
-                            "type": "AMAZON.NUMBER"
-                        },
-                        {
-                            "name": "singleAge",
-                            "type": "AMAZON.NUMBER"
                         }
                     ],
                     "samples": [
-                        "may I see patients of age {singleAge} diagnosed with {disease}",
-                        "may I see patients between the ages of {firstAge} and {secondAge} with {disease}",
-                        "please give me patients with {disease} of age {singleAge}",
-                        "give me patients that have {disease} of age {singleAge}",
-                        "let me see patients with {disease} between ages {firstAge} and {secondAge}",
-                        "let me see patients with {disease} between the ages of {firstAge} and {secondAge}",
-                        "let me see patients that have {disease}",
-                        "give me patients that have {disease}",
-                        "may I see patients that have {disease}",
-                        "please give me patients that have {disease}",
-                        "please show me patients that have {disease}",
-                        "please give me patients with {disease}",
                         "give me patients with {disease}",
-                        "may i see patients with {disease}",
-                        "please show me patients with {disease}",
-                        "show me patients with {disease}",
-                        "let me see patients with {disease}"
+                        "show me patients with {disease}"
                     ]
                 }
             ],
