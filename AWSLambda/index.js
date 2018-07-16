@@ -2,7 +2,8 @@
 /* eslint-disable  no-console */
 
 var Alexa       = require('ask-sdk-core'),
-    mySQL       = require('mysql');
+    mySQL       = require('mysql'),
+    CONFIG      = require('./config.json');
 
 
 
@@ -40,42 +41,27 @@ const patientQueryIntentHandler = {
       && handlerInput.requestEnvelope.request.intent.name === 'patientQuery';
   },
   handle(handlerInput) {
-    var speechText = "Accessing data for patients ";
-    
-    //Variables for each of the slot types
+    //Slot data pulled straight from Alexa envelope
     var disease = handlerInput.requestEnvelope.request.intent.slots.disease.value;
-    var firstAge = handlerInput.requestEnvelope.request.intent.slots.firstAge.value;
-    var secondAge = handlerInput.requestEnvelope.request.intent.slots.secondAge.value;
-    
-    //Decides which speech text to send back to Alexa 
-    if (firstAge === undefined && secondAge === undefined) {
-      speechText += "with " + disease;
-    }
-    else if (disease === undefined) {
-      speechText += "between the ages of " + firstAge + " and " + secondAge; 
-    } else {
-      speechText += "between the ages of " + firstAge + " and " + secondAge + " with " + disease;
-    }
-    
-      
+
     //Establish db connection
     var db  = mySQL.createConnection({
-      host: "i2b2querystore.cncfflqccsyv.us-east-1.rds.amazonaws.com",
-      user: "willkc15",
-      password: 'gastonbella',
-      database: 'i2b2querystore'
+      host: CONFIG.dbHost,
+      user: CONFIG.dbUser,
+      password: CONFIG.dbPassword,
+      database: CONFIG.dbName
     });
   
-    let sqlWrite = "INSERT INTO querys SET ?";
-    let postDB = {disease: disease, firstAge: firstAge, secondAge: secondAge, id: null}; 
-    let sqlRead = "SELECT * FROM querys ORDER BY id DESC LIMIT 1";
+    let sqlWrite = 'INSERT INTO querys SET ?';
+    let postDB = {disease: disease, id: null}; 
+    let sqlRead = 'SELECT * FROM querys ORDER BY id DESC LIMIT 1';
     
     //Write to database
     db.query(sqlWrite, postDB, function(err, result) {
       if (err) {
         console.log('SOMETHING WRONG WITH DB WRITE');
       } else {
-        console.log("WROTE TO DB!");
+        console.log('WROTE TO DB!');
       }
     });
      
@@ -83,7 +69,7 @@ const patientQueryIntentHandler = {
     //Must return in this fashion, otherwise will return before db is queried
     return new Promise((resolve, reject) => {
      dbQuery(sqlRead, db).then((response) => {
-       resolve(handlerInput.responseBuilder.speak(speechText + ': ' + response[0].disease).getResponse());
+       resolve(handlerInput.responseBuilder.speak('Acessing data for patients with ' + response[0].disease).getResponse());
      }).catch((error) => {
         resolve(handlerInput.responseBuilder.speak('PROMISE NOT WORKING')
         .getResponse());
