@@ -2,6 +2,9 @@ import pymysql
 import requests
 import xml.etree.ElementTree as ET
 import json
+import smtplib
+import random
+import difflib
 
 
 def get_query():
@@ -41,7 +44,7 @@ def get_query():
 def get_session_key():
 
     # XML string used to interact with i2b2 API, will use an xml string like this for every i2b2 call
-    # Use the demo username and password, not checking for authentication of user yet
+    ### Currently using demo username and password, will need to come back to this when we get into authentication
     xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <i2b2:request xmlns:i2b2="http://www.i2b2.org/xsd/hive/msg/1.1/" xmlns:pm="http://www.i2b2.org/xsd/cell/pm/1.1/">
         <message_header>
@@ -166,14 +169,16 @@ def get_categories(session_key):
     with open('categories.xml', 'wb') as f:
         f.write(resp.content)
 
-    # Have to pass namespaces as argument to dom as it does not recognize them by default
     namespaces = {'ns5': "http://www.i2b2.org/xsd/hive/msg/1.1/", 'ns6': "http://www.i2b2.org/xsd/cell/ont/1.1/"}
     dom = ET.parse('categories.xml')
     data = dom.findall('message_body/ns6:concepts/concept', namespaces)
+
     key_strings = []  # Declared here for scope reasons
     for d in data:
         item = d.find('key').text
         key_strings.append(item)
+
+    # Formats and stores categories in list to return
     categories = []
     for cat in key_strings:
         item = cat.split('\\')
@@ -182,7 +187,9 @@ def get_categories(session_key):
 
 
 def get_search_keys(session_key, query, categories):
+
     search_keys = []  # Declared here for scope reasons
+    # We must search through each category as there is no 'all category' option
     for cat in categories:
         xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         <ns3:request xmlns:ns3="http://www.i2b2.org/xsd/hive/msg/1.1/" xmlns:ns4="http://www.i2b2.org/xsd/cell/ont/1.1/" xmlns:ns2="http://www.i2b2.org/xsd/hive/plugin/">
@@ -235,20 +242,48 @@ def get_search_keys(session_key, query, categories):
                 </ns4:get_name_info>
             </message_body>
         </ns3:request>"""
+
         resp = requests.post('http://brsadata01pv:909/i2b2-webclient/index.php', data=xml)
+        # Will store each category's search keys temporarily but after function is executed, file will only have the last category
         with open('search_keys.xml', 'wb') as f:
             f.write(resp.content)
 
         namespaces = {'ns5': 'http://www.i2b2.org/xsd/hive/msg/1.1/', 'ns6': 'http://www.i2b2.org/xsd/cell/ont/1.1/'}
         dom = ET.parse('search_keys.xml')
         data = dom.findall('message_body/ns6:concepts/concept', namespaces)
+        ### For now assign a random totalnum value, will need to pull real value once connected to actual I2B2
         for d in data:
-            item = d.find('key').text
-            search_keys.append(item)
+            key = d.find('key').text
+            total_num = d.find('totalnum').text
+            if total_num is None:
+                total_num = random.randint(0, 11)
+            set_pair = [key, int(total_num)]
+            search_keys.append(set_pair)
+    # We return a list of lists each storing a key and a totalnum value
     return search_keys
 
 
-def get_i2b2_result(session_key, search_keys):
+def find_best(search_keys, query):
+
+    max_num = 0
+    best_key = ''
+    # We choose the best key based on totalnum and use pythons levenshtein algorithm as a tiebreak
+    for item in search_keys:
+        if item[1] > max_num:
+            max_num = item[1]
+            best_key = item[0]
+        elif item[1] == max_num:
+            sequence = difflib.SequenceMatcher(isjunk=None, a=item[0], b=query)
+            similarity_competitor = round(sequence.ratio() * 100, 1)
+            sequence = difflib.SequenceMatcher(isjunk=None, a=best_key, b=query)
+            similarity_leader = round(sequence.ratio() * 100, 1)
+            if similarity_competitor > similarity_leader:
+                best_key = item[0]
+    return best_key
+
+
+def get_i2b2_result(session_key, best_key):
+
     xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <ns6:request xmlns:ns4="http://www.i2b2.org/xsd/cell/crc/psm/1.1/" xmlns:ns7="http://www.i2b2.org/xsd/cell/ont/1.1/" xmlns:ns3="http://www.i2b2.org/xsd/cell/crc/pdo/1.1/" xmlns:ns5="http://www.i2b2.org/xsd/hive/plugin/" xmlns:ns2="http://www.i2b2.org/xsd/hive/pdo/1.1/" xmlns:ns6="http://www.i2b2.org/xsd/hive/msg/1.1/" xmlns:ns8="http://www.i2b2.org/xsd/cell/crc/psm/querydefinition/1.1/">
         <message_header>
@@ -315,7 +350,7 @@ def get_i2b2_result(session_key, search_keys):
             <item>
                 <hlevel>6</hlevel>
                 <item_name>N/A</item_name>
-                <item_key>""" + search_keys[0] + """
+                <item_key>""" + best_key + """
     </item_key>
                 <tooltip>N/A</tooltip>
                 <class>ENC</class>
@@ -346,10 +381,33 @@ def get_i2b2_result(session_key, search_keys):
     return result
 
 
+def send_email(query, best_key, result):
+
+    try:
+        with open('config.json', 'r') as f:
+            config = json.load(f)
+        server = smtplib.SMTP('smtp.gmail.com:587')
+        server.ehlo()
+        server.starttls()
+        server.ehlo()
+        server.login(config['emailAddress'], config['password'])
+        ### Eventually want to have users email address passed to use here from Alexa skill
+        to_address = 'kelton.c.williams@gmail.com'
+        # Must start message string with newline otherwise email body will be empty
+        message = '\nHello, this is Alexa with I2B2. We have located the data you requested:\nYou wanted us to query i2b2 for the phrase:' \
+                  '\ ' + query + '.\nGiven this information we ran a query on the following: ' + best_key + '\nWe found this data set to have set size of: ' + result + '.'
+        print(message)
+        server.sendmail(config['emailAddress'], to_address, message)
+        server.quit()
+        print('Email sent successfully!')
+    except:
+        print('Email failed to send!')
+
+
 def main():
     ### query = get_query()
     # Currently setting default query as application is not live yet
-    query = 'heart'
+    query = 'circulatory'
     print(query)
     # Gets session key necessary for each request we make to I2B2
     session_key = get_session_key()
@@ -357,15 +415,17 @@ def main():
     # Need categories of data to search through each one for our requested data, no 'all' category option
     categories = get_categories(session_key)
     print(categories)
-    # Returns necessary path information to later find set size of requested data
+    # Returns necessary key information as well as totalnum as a list of lists
     search_keys = get_search_keys(session_key, query, categories)
     # Check whether or not requested data exists
     if search_keys:
-        print(search_keys[0])
-        ### Maybe use algorithm here to find most desirable search key, based off users Alexa request
+        print(search_keys)
+        best_key = find_best(search_keys, query)
+        print(best_key)
         # Finally gets the desired data, which as of now is the set size
-        result = get_i2b2_result(session_key, search_keys)
+        result = get_i2b2_result(session_key, best_key)
         print(result)
+        send_email(query, best_key, result)
     else:
         print("Could not find requested data")
 
