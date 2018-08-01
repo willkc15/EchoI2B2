@@ -1,6 +1,0 @@
-{
-    "dbHost":       "i2b2querystore.cncfflqccsyv.us-east-1.rds.amazonaws.com",
-    "dbUser":       "willkc15",
-    "dbPassword":   "gastonbella",
-    "dbName":       "i2b2querystore"
-}
